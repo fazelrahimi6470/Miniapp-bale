@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>ماشین‌حساب مهندسی</title>
+  <style>
+    :root {
+      --bg: #0f1210;
+      --panel: #1a1f1b;
+      --key: #2a312b;
+      --key-fn: #222822;
+      --key-op: #3a3428;
+      --accent: #d4a656;
+      --accent-fg: #1a1408;
+      --display: #0a0c09;
+      --text: #ece8df;
+      --muted: #9b968a;
+      --danger: #c45c4a;
+      --border: #3a4034;
+      --radius: 12px;
+      --font: "Segoe UI", Tahoma, "Vazirmatn", system-ui, sans-serif;
+      --mono: "Consolas", "Courier New", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100dvh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 16px;
+      line-height: 1.4;
+    }
+
+    .shell {
+      width: 100%;
+      max-width: 420px;
+    }
+
+    header {
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-top: 2px;
+    }
+
+    .calc {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 14px;
+      box-shadow: 0 20px 50px rgba(0,0,0,.45);
+    }
+
+    .status {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-family: var(--mono);
+      letter-spacing: 0.04em;
+      direction: ltr;
+    }
+
+    .status .badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      background: #121612;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2px 7px;
+      color: var(--accent);
+    }
+
+    .badge.on-m { color: #9dca7a; }
+
+    .display {
+      background: var(--display);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,.35);
+      direction: ltr;
+      text-align: right;
+      min-height: 92px;
+    }
+
+    .expr {
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.95rem;
+      text-align: right;
+      direction: ltr;
+      margin-bottom: 6px;
+    }
+
+    .result {
+      font-family: var(--mono);
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--accent);
+      word-break: break-all;
+      line-height: 1.15;
+      min-height: 1.2em;
+    }
+
+    .result.error {
+      color: var(--danger);
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+
+    .result.dim { color: var(--muted); }
+
+    .keys {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 7px;
+    }
+
+    button {
+      font-family: inherit;
+      border: none;
+      border-radius: 10px;
+      min-height: 48px;
+      padding: 6px 4px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+      background: var(--key);
+      cursor: pointer;
+      transition: transform .08s ease, background .12s ease, box-shadow .12s ease;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      line-height: 1.1;
+    }
+
+    button:hover { background: #343c35; }
+    button:active { transform: scale(0.96); }
+
+    button .shift-label {
+      font-size: 0.62rem;
+      color: var(--accent);
+      font-weight: 500;
+      opacity: 0.85;
+      height: 12px;
+    }
+
+    button.fn { background: var(--key-fn); color: #c8c4b8; font-size: 0.82rem; }
+    button.op { background: var(--key-op); color: #f0d9a0; }
+    button.eq {
+      background: var(--accent);
+      color: var(--accent-fg);
+      font-size: 1.25rem;
+    }
+    button.eq:hover { filter: brightness(1.08); }
+    button.danger { color: #e88a7a; }
+    button.active-mode {
+      background: #3d3420;
+      color: var(--accent);
+      box-shadow: inset 0 0 0 1px var(--accent);
+    }
+
+    .help {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .help kbd {
+      font-family: var(--mono);
+      background: #1a1f1b;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 0.75rem;
+      color: var(--text);
+    }
+
+    .other-bots {
+      margin-top: 16px;
+      text-align: center;
+    }
+
+    .other-bots-label {
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-bottom: 8px;
+    }
+
+    .bot-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      max-width: 420px;
+      min-height: 48px;
+      padding: 12px 16px;
+      background: linear-gradient(180deg, #2e3a2f 0%, #243028 100%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--accent);
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background .15s ease, transform .08s ease, border-color .15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .bot-link:hover {
+      background: linear-gradient(180deg, #3a483c 0%, #2c3830 100%);
+      border-color: var(--accent);
+    }
+
+    .bot-link:active {
+      transform: scale(0.98);
+    }
+
+    @media (max-width: 380px) {
+      .result { font-size: 1.55rem; }
+      button { min-height: 44px; font-size: 0.88rem; }
+      button.fn { font-size: 0.75rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <h1>ماشین‌حساب مهندسی</h1>
+      <p>علمی · نماد مهندسی · DEG / RAD</p>
+    </header>
+
+    <div class="calc" id="calc">
+      <div class="status">
+        <div class="badges">
+          <span class="badge" id="angleBadge">DEG</span>
+          <span class="badge" id="fmtBadge">NORM</span>
+          <span class="badge" id="shiftBadge" style="display:none">2nd</span>
+          <span class="badge" id="hypBadge" style="display:none">HYP</span>
+          <span class="badge on-m" id="memBadge" style="display:none">M</span>
+        </div>
+        <span>ENG-12</span>
+      </div>
+
+      <div class="display">
+        <input class="expr" id="expr" type="text" inputmode="decimal" placeholder="sin(45)+2^3" autocomplete="off" spellcheck="false" dir="ltr" />
+        <div class="result dim" id="result">0</div>
+      </div>
+
+      <div class="keys" id="keys"></div>
+    </div>
+
+    <p class="help">
+      می‌توانید مستقیم تایپ کنید: <kbd>sin(30)</kbd> · <kbd>log(100)</kbd> · <kbd>2^10</kbd> · <kbd>5!</kbd><br />
+      کلید <kbd>2nd</kbd> توابع معکوس · <kbd>HYP</kbd> هذلولی · <kbd>ENG</kbd> نماد مهندسی
+    </p>
+
+    <div class="other-bots">
+      <p class="other-bots-label">ربات‌های دیگر ما</p>
+      <a
+        class="bot-link"
+        href="https://ble.ir/Shabihsaz_zendegi_bot?start=inv_2138446206"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        شبیه ساز زندگی
+      </a>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      // ---------- State ----------
+      const state = {
+        angle: "deg",       // deg | rad | grad
+        fmt: "norm",        // norm | sci | eng | fix
+        fixDigits: 6,
+        second: false,
+        hyp: false,
+        memory: null,
+        ans: null,
+        lastError: null,
+      };
+
+      const $ = (id) => document.getElementById(id);
+      const exprEl = $("expr");
+      const resultEl = $("result");
+
+      // ---------- Math helpers ----------
+      class CalcError extends Error {
+        constructor(msg, kind = "domain") {
+          super(msg);
+          this.kind = kind;
+        }
+      }
+
+      function toRad(x) {
+        if (state.angle === "deg") return x * Math.PI / 180;
+        if (state.angle === "grad") return x * Math.PI / 200;
+        return x;
+      }
+      function fromRad(x) {
+        if (state.angle === "deg") return x * 180 / Math.PI;
+        if (state.angle === "grad") return x * 200 / Math.PI;
+        return x;
+      }
+
+      function gamma(z) {
+        const p = [
+          0.99999999999980993, 676.5203681218851, -1259.1392167224028,
+          771.32342877765313, -176.61502916214059, 12.507343278686905,
+          -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7
+        ];
+        if (z < 0.5) {
+          if (Math.abs(Math.sin(Math.PI * z)) < 1e-15) throw new CalcError("خارج از دامنه");
+          return Math.PI / (Math.sin(Math.PI * z) * gamma(1 - z));
+        }
+        z -= 1;
+        let x = p[0];
+        for (let i = 1; i < p.length; i++) x += p[i] / (z + i);
+        const t = z + p.length - 1.5;
+        return Math.sqrt(2 * Math.PI) * Math.pow(t, z + 0.5) * Math.exp(-t) * x;
+      }
+
+      function factorial(n) {
+        if (n < 0 && Number.isInteger(n)) throw new CalcError("خارج از دامنه");
+        if (n > 170) throw new CalcError("سرریز");
+        if (Number.isInteger(n) && n >= 0) {
+          let r = 1;
+          for (let i = 2; i <= n; i++) r *= i;
+          return r;
+        }
+        const g = gamma(n + 1);
+        if (!Number.isFinite(g)) throw new CalcError("خارج از دامنه");
+        return g;
+      }
+
+      function ncr(n, k) {
+        if (!Number.isInteger(n) || !Number.isInteger(k) || n < 0 || k < 0 || k > n)
+          throw new CalcError("خارج از دامنه");
+        k = Math.min(k, n - k);
+        let r = 1;
+        for (let i = 1; i <= k; i++) r = r * (n - k + i) / i;
+        return r;
+      }
+
+      function npr(n, k) {
+        if (!Number.isInteger(n) || !Number.isInteger(k) || n < 0 || k < 0 || k > n)
+          throw new CalcError("خارج از دامنه");
+        let r = 1;
+        for (let i = 0; i < k; i++) r *= (n - i);
+        return r;
+      }
+
+      // ---------- Tokenizer & parser ----------
+      const FNS = new Set([
+        "sin","cos","tan","asin","acos","atan","sinh","cosh","tanh","asinh","acosh","atanh",
+        "ln","log","log10","log2","sqrt","cbrt","abs","floor","ceil","round","exp","alog",
+        "fact","mod","ncr","npr","atan2"
+      ]);
+
+      const CONSTS = {
+        pi: Math.PI, π: Math.PI, e: Math.E, phi: (1 + Math.sqrt(5)) / 2,
+        g: 9.80665, c: 299792458, h: 6.62607015e-34, hbar: 1.054571817e-34,
+        k: 1.380649e-23, na: 6.02214076e23, r: 8.314462618,
+        eps0: 8.8541878128e-12, mu0: 1.25663706212e-6, G: 6.67430e-11,
+        sigma: 5.670374419e-8, atm: 101325, ev: 1.602176634e-19
+      };
+
+      function normalize(s) {
+        const dig = {
+          "۰":"0","۱":"1","۲":"2","۳":"3","۴":"4","۵":"5","۶":"6","۷":"7","۸":"8","۹":"9",
+          "٠":"0","١":"1","٢":"2","٣":"3","٤":"4","٥":"5","٦":"6","٧":"7","٨":"8","٩":"9"
+        };
+        return s.replace(/[۰-۹٠-٩]/g, c => dig[c] || c)
+          .replace(/[×·]/g, "*").replace(/÷/g, "/").replace(/[−–—]/g, "-")
+          .replace(/،/g, ",");
+      }
+
+      function canonical(name) {
+        const map = {
+          pi: "pi", π: "pi", PI: "pi", Pi: "pi",
+          e: "e", E: "e", ans: "ans", ANS: "ans", Ans: "ans",
+          NA: "na", Na: "na", PHI: "phi", Phi: "phi"
+        };
+        if (map[name]) return map[name];
+        const low = name.toLowerCase();
+        if (FNS.has(low) || low in CONSTS || low === "ans") return low;
+        return name;
+      }
+
+      function tokenize(input) {
+        const s = normalize(input);
+        const tokens = [];
+        let i = 0;
+        const isDigit = c => c >= "0" && c <= "9";
+        const isIdStart = c => /[A-Za-zπ_]/i.test(c);
+        const isId = c => /[A-Za-z0-9_π]/i.test(c);
+
+        while (i < s.length) {
+          const c = s[i];
+          if (c === " " || c === "\t") { i++; continue; }
+          if (c === "(") { tokens.push({ k: "lp" }); i++; continue; }
+          if (c === ")") { tokens.push({ k: "rp" }); i++; continue; }
+          if (c === ",") { tokens.push({ k: "comma" }); i++; continue; }
+          if (c === "+") { tokens.push({ k: "op", v: "+" }); i++; continue; }
+          if (c === "-") { tokens.push({ k: "op", v: "-" }); i++; continue; }
+          if (c === "*") { tokens.push({ k: "op", v: "*" }); i++; continue; }
+          if (c === "/") { tokens.push({ k: "op", v: "/" }); i++; continue; }
+          if (c === "^") { tokens.push({ k: "op", v: "^" }); i++; continue; }
+          if (c === "%") { tokens.push({ k: "op", v: "%" }); i++; continue; }
+          if (c === "!") { tokens.push({ k: "op", v: "!" }); i++; continue; }
+
+          if (isDigit(c) || (c === "." && isDigit(s[i + 1] || ""))) {
+            let j = i;
+            while (isDigit(s[j])) j++;
+            if (s[j] === ".") { j++; while (isDigit(s[j])) j++; }
+            if ((s[j] === "e" || s[j] === "E") &&
+                (isDigit(s[j + 1] || "") || ((s[j + 1] === "+" || s[j + 1] === "-") && isDigit(s[j + 2] || "")))) {
+              j++;
+              if (s[j] === "+" || s[j] === "-") j++;
+              while (isDigit(s[j])) j++;
+            }
+            const v = Number(s.slice(i, j));
+            if (!Number.isFinite(v)) throw new CalcError("سرریز", "math");
+            tokens.push({ k: "num", v });
+            i = j;
+            continue;
+          }
+
+          if (isIdStart(c)) {
+            let j = i + 1;
+            while (j < s.length && isId(s[j])) j++;
+            const raw = s.slice(i, j);
+            const name = canonical(raw);
+            if (name === "mod") {
+              let k = j;
+              while (s[k] === " ") k++;
+              if (s[k] === "(") tokens.push({ k: "id", v: "mod" });
+              else tokens.push({ k: "op", v: "mod" });
+            } else {
+              tokens.push({ k: "id", v: name });
+            }
+            i = j;
+            continue;
+          }
+
+          throw new CalcError("نویسه نامعتبر", "syntax");
+        }
+
+        // implicit multiplication
+        const out = [];
+        for (let t = 0; t < tokens.length; t++) {
+          const cur = tokens[t];
+          const prev = out[out.length - 1];
+          if (prev) {
+            const leftVal =
+              prev.k === "num" || prev.k === "rp" ||
+              (prev.k === "op" && (prev.v === "!" || prev.v === "%")) ||
+              (prev.k === "id" && !FNS.has(prev.v));
+            const rightVal =
+              cur.k === "num" || cur.k === "lp" || cur.k === "id";
+            const isCall = prev.k === "id" && FNS.has(prev.v) && cur.k === "lp";
+            if (leftVal && rightVal && !isCall) out.push({ k: "op", v: "*" });
+          }
+          out.push(cur);
+        }
+        return out;
+      }
+
+      function evaluate(input) {
+        const tokens = tokenize(input);
+        if (!tokens.length) throw new CalcError("عبارت خالی است", "syntax");
+        let i = 0;
+        const peek = () => tokens[i];
+        const eat = () => tokens[i++];
+
+        function call(name, args) {
+          const need = (n) => {
+            if (args.length !== n) throw new CalcError("تعداد آرگومان نادرست", "syntax");
+          };
+          const a0 = args[0];
+          switch (name) {
+            case "sin": need(1); return Math.sin(toRad(a0));
+            case "cos": need(1); return Math.cos(toRad(a0));
+            case "tan": {
+              need(1);
+              const r = toRad(a0);
+              if (Math.abs(Math.cos(r)) < 1e-12) throw new CalcError("خارج از دامنه");
+              return Math.tan(r);
+            }
+            case "asin": need(1); if (a0 < -1 || a0 > 1) throw new CalcError("خارج از دامنه"); return fromRad(Math.asin(a0));
+            case "acos": need(1); if (a0 < -1 || a0 > 1) throw new CalcError("خارج از دامنه"); return fromRad(Math.acos(a0));
+            case "atan": need(1); return fromRad(Math.atan(a0));
+            case "atan2": need(2); return fromRad(Math.atan2(a0, args[1]));
+            case "sinh": need(1); return Math.sinh(a0);
+            case "cosh": need(1); return Math.cosh(a0);
+            case "tanh": need(1); return Math.tanh(a0);
+            case "asinh": need(1); return Math.asinh(a0);
+            case "acosh": need(1); if (a0 < 1) throw new CalcError("خارج از دامنه"); return Math.acosh(a0);
+            case "atanh": need(1); if (a0 <= -1 || a0 >= 1) throw new CalcError("خارج از دامنه"); return Math.atanh(a0);
+            case "ln": need(1); if (a0 <= 0) throw new CalcError("خارج از دامنه"); return Math.log(a0);
+            case "log":
+            case "log10":
+              if (args.length === 1) {
+                if (a0 <= 0) throw new CalcError("خارج از دامنه");
+                return Math.log10(a0);
+              }
+              if (args.length === 2) {
+                if (a0 <= 0 || args[1] <= 0 || args[1] === 1) throw new CalcError("خارج از دامنه");
+                return Math.log(a0) / Math.log(args[1]);
+              }
+              throw new CalcError("تعداد آرگومان نادرست", "syntax");
+            case "log2": need(1); if (a0 <= 0) throw new CalcError("خارج از دامنه"); return Math.log2(a0);
+            case "exp": need(1); return Math.exp(a0);
+            case "alog": need(1); return Math.pow(10, a0);
+            case "sqrt": need(1); if (a0 < 0) throw new CalcError("خارج از دامنه"); return Math.sqrt(a0);
+            case "cbrt": need(1); return Math.cbrt(a0);
+            case "abs": need(1); return Math.abs(a0);
+            case "floor": need(1); return Math.floor(a0);
+            case "ceil": need(1); return Math.ceil(a0);
+            case "round": need(1); return Math.round(a0);
+            case "fact": need(1); return factorial(a0);
+            case "mod": need(2); if (args[1] === 0) throw new CalcError("تقسیم بر صفر"); return a0 % args[1];
+            case "ncr": need(2); return ncr(a0, args[1]);
+            case "npr": need(2); return npr(a0, args[1]);
+            default: throw new CalcError("نماد ناشناخته", "syntax");
+          }
+        }
+
+        function constant(name) {
+          if (name === "ans") {
+            if (state.ans === null) throw new CalcError("Ans خالی است", "syntax");
+            return state.ans;
+          }
+          if (name in CONSTS) return CONSTS[name];
+          throw new CalcError("نماد ناشناخته: " + name, "syntax");
+        }
+
+        function primary() {
+          const p = peek();
+          if (!p) throw new CalcError("عبارت ناقص است", "syntax");
+          if (p.k === "num") { eat(); return p.v; }
+          if (p.k === "lp") {
+            eat();
+            const v = expr();
+            if (!peek() || peek().k !== "rp") throw new CalcError("پرانتز بسته نیست", "syntax");
+            eat();
+            return v;
+          }
+          if (p.k === "id") {
+            eat();
+            if (peek() && peek().k === "lp" && FNS.has(p.v)) {
+              eat();
+              const args = [];
+              if (peek() && peek().k !== "rp") {
+                args.push(expr());
+                while (peek() && peek().k === "comma") {
+                  eat();
+                  args.push(expr());
+                }
+              }
+              if (!peek() || peek().k !== "rp") throw new CalcError("پرانتز بسته نیست", "syntax");
+              eat();
+              return call(p.v, args);
+            }
+            return constant(p.v);
+          }
+          throw new CalcError("عبارت نامعتبر است", "syntax");
+        }
+
+        function postfix() {
+          let v = primary();
+          for (;;) {
+            const p = peek();
+            if (p && p.k === "op" && p.v === "!") { eat(); v = factorial(v); }
+            else if (p && p.k === "op" && p.v === "%") { eat(); v = v / 100; }
+            else break;
+          }
+          return v;
+        }
+
+        function power() {
+          const base = postfix();
+          if (peek() && peek().k === "op" && peek().v === "^") {
+            eat();
+            const exp = unary();
+            return Math.pow(base, exp);
+          }
+          return base;
+        }
+
+        function unary() {
+          if (peek() && peek().k === "op" && (peek().v === "+" || peek().v === "-")) {
+            const op = eat().v;
+            const v = unary();
+            return op === "-" ? -v : v;
+          }
+          return power();
+        }
+
+        function term() {
+          let v = unary();
+          for (;;) {
+            const p = peek();
+            if (!p || p.k !== "op") break;
+            if (p.v === "*" || p.v === "/" || p.v === "mod") {
+              eat();
+              const r = unary();
+              if (p.v === "*") v *= r;
+              else if (p.v === "/") {
+                if (r === 0) throw new CalcError("تقسیم بر صفر");
+                v /= r;
+              } else {
+                if (r === 0) throw new CalcError("تقسیم بر صفر");
+                v %= r;
+              }
+            } else break;
+          }
+          return v;
+        }
+
+        function expr() {
+          let v = term();
+          for (;;) {
+            const p = peek();
+            if (p && p.k === "op" && (p.v === "+" || p.v === "-")) {
+              eat();
+              const r = term();
+              v = p.v === "+" ? v + r : v - r;
+            } else break;
+          }
+          return v;
+        }
+
+        const result = expr();
+        if (i < tokens.length) throw new CalcError("عبارت نامعتبر است", "syntax");
+        if (!Number.isFinite(result)) throw new CalcError("نتیجه نامعتبر", "math");
+        return result;
+      }
+
+      // ---------- Format ----------
+      function trimZeros(s) {
+        if (!s.includes(".")) return s;
+        return s.replace(/\.?0+$/, "");
+      }
+
+      function groupInt(s) {
+        const neg = s.startsWith("-");
+        const body = neg ? s.slice(1) : s;
+        const [int, frac] = body.split(".");
+        const g = int.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        const out = frac !== undefined ? g + "." + frac : g;
+        return neg ? "-" + out : out;
+      }
+
+      function formatNumber(n) {
+        if (!Number.isFinite(n)) return { text: "خطا", error: true };
+        if (Object.is(n, -0)) n = 0;
+        const sign = n < 0 ? "−" : "";
+        const a = Math.abs(n);
+
+        if (state.fmt === "fix") {
+          return { text: sign + groupInt(a.toFixed(state.fixDigits)), error: false };
+        }
+
+        if (a === 0) return { text: "0", error: false };
+
+        const makeSci = (val, digits) => {
+          let exp = Math.floor(Math.log10(val));
+          let mant = val / Math.pow(10, exp);
+          if (mant >= 10) { mant /= 10; exp += 1; }
+          return { mant: trimZeros(mant.toPrecision(digits)), exp };
+        };
+
+        if (state.fmt === "sci") {
+          const { mant, exp } = makeSci(a, 8);
+          return { text: sign + mant + "×10^" + exp, error: false };
+        }
+
+        if (state.fmt === "eng") {
+          let exp = Math.floor(Math.log10(a));
+          let eng = Math.floor(exp / 3) * 3;
+          let mant = a / Math.pow(10, eng);
+          if (mant >= 1000) { mant /= 1000; eng += 3; }
+          return { text: sign + trimZeros(mant.toPrecision(8)) + "×10^" + eng, error: false };
+        }
+
+        // norm
+        if (a >= 1e10 || a < 1e-6) {
+          const { mant, exp } = makeSci(a, 8);
+          return { text: sign + mant + "×10^" + exp, error: false };
+        }
+        const s = trimZeros(a.toPrecision(12));
+        if (s.includes("e") || s.includes("E")) {
+          const { mant, exp } = makeSci(a, 8);
+          return { text: sign + mant + "×10^" + exp, error: false };
+        }
+        return { text: sign + groupInt(s), error: false };
+      }
+
+      // ---------- UI ----------
+      function updateBadges() {
+        $("angleBadge").textContent = state.angle.toUpperCase();
+        $("fmtBadge").textContent = state.fmt.toUpperCase();
+        $("shiftBadge").style.display = state.second ? "" : "none";
+        $("hypBadge").style.display = state.hyp ? "" : "none";
+        $("memBadge").style.display = state.memory !== null ? "" : "none";
+        renderKeys();
+      }
+
+      function getCaret() {
+        if (document.activeElement === exprEl) {
+          return [
+            exprEl.selectionStart ?? exprEl.value.length,
+            exprEl.selectionEnd ?? exprEl.value.length
+          ];
+        }
+        return [exprEl.value.length, exprEl.value.length];
+      }
+
+      function setExpr(value, cursor) {
+        exprEl.value = value;
+        state.lastError = null;
+        if (cursor != null) {
+          exprEl.focus();
+          exprEl.setSelectionRange(cursor, cursor);
+        }
+        liveEval();
+      }
+
+      function insertText(text) {
+        const [a, b] = getCaret();
+        const v = exprEl.value;
+        const next = v.slice(0, a) + text + v.slice(b);
+        setExpr(next, a + text.length);
+      }
+
+      function backspace() {
+        const [a, b] = getCaret();
+        const v = exprEl.value;
+        if (a !== b) {
+          setExpr(v.slice(0, a) + v.slice(b), a);
+        } else if (a > 0) {
+          setExpr(v.slice(0, a - 1) + v.slice(a), a - 1);
+        }
+      }
+
+      function clearAll() {
+        state.second = false;
+        state.hyp = false;
+        state.lastError = null;
+        setExpr("", 0);
+        resultEl.textContent = "0";
+        resultEl.className = "result dim";
+        updateBadges();
+      }
+
+      function liveEval() {
+        const src = exprEl.value.trim();
+        if (!src) {
+          resultEl.textContent = "0";
+          resultEl.className = "result dim";
+          return;
+        }
+        try {
+          const v = evaluate(src);
+          const f = formatNumber(v);
+          resultEl.textContent = f.text;
+          resultEl.className = "result";
+        } catch (e) {
+          if (e instanceof CalcError && e.kind === "syntax") {
+            resultEl.textContent = "—";
+            resultEl.className = "result dim";
+          } else {
+            resultEl.textContent = e.message || "خطا";
+            resultEl.className = "result error";
+          }
+        }
+      }
+
+      function doEquals() {
+        const src = exprEl.value.trim();
+        if (!src) return;
+        try {
+          const v = evaluate(src);
+          state.ans = v;
+          const f = formatNumber(v);
+          resultEl.textContent = f.text;
+          resultEl.className = "result";
+          state.lastError = null;
+        } catch (e) {
+          resultEl.textContent = e.message || "خطا";
+          resultEl.className = "result error";
+          state.lastError = e.message;
+        }
+        state.second = false;
+        state.hyp = false;
+        updateBadges();
+      }
+
+      function cycleAngle() {
+        state.angle = state.angle === "deg" ? "rad" : state.angle === "rad" ? "grad" : "deg";
+        updateBadges();
+        liveEval();
+      }
+
+      function cycleFmt() {
+        const order = ["norm", "sci", "eng", "fix"];
+        state.fmt = order[(order.indexOf(state.fmt) + 1) % order.length];
+        updateBadges();
+        liveEval();
+      }
+
+      function trigName(base) {
+        // base: sin | cos | tan
+        if (state.hyp && state.second) return "a" + base + "h";
+        if (state.hyp) return base + "h";
+        if (state.second) return "a" + base;
+        return base;
+      }
+
+      function trigLabel(base) {
+        if (state.hyp && state.second) return base + "h⁻¹";
+        if (state.hyp) return base + "h";
+        if (state.second) return base + "⁻¹";
+        return base;
+      }
+
+      function pressKey(action) {
+        switch (action) {
+          case "2nd":
+            state.second = !state.second;
+            updateBadges();
+            return;
+          case "hyp":
+            state.hyp = !state.hyp;
+            updateBadges();
+            return;
+          case "angle":
+            cycleAngle();
+            return;
+          case "fmt":
+            cycleFmt();
+            return;
+          case "ac":
+            clearAll();
+            return;
+          case "bk":
+            backspace();
+            return;
+          case "eq":
+            doEquals();
+            return;
+          case "mc":
+            state.memory = null;
+            updateBadges();
+            return;
+          case "mr":
+            if (state.memory !== null) insertText(String(state.memory));
+            return;
+          case "mplus": {
+            try {
+              const v = evaluate(exprEl.value.trim() || "0");
+              state.memory = (state.memory ?? 0) + v;
+              updateBadges();
+            } catch (_) {}
+            return;
+          }
+          case "mminus": {
+            try {
+              const v = evaluate(exprEl.value.trim() || "0");
+              state.memory = (state.memory ?? 0) - v;
+              updateBadges();
+            } catch (_) {}
+            return;
+          }
+          case "ans":
+            insertText("Ans");
+            return;
+          case "pi":
+            insertText(state.second ? "phi" : "π");
+            state.second = false;
+            updateBadges();
+            return;
+          case "e":
+            insertText("e");
+            return;
+          case "exp": {
+            const [a] = getCaret();
+            const before = exprEl.value.slice(0, a);
+            if (/\d\.?$/.test(before)) insertText("e");
+            else insertText("*10^");
+            return;
+          }
+          case "pct":
+            if (state.second) insertText(",");
+            else insertText("%");
+            state.second = false;
+            updateBadges();
+            return;
+          case "sqrt":
+            insertText(state.second ? "cbrt(" : "sqrt(");
+            state.second = false;
+            updateBadges();
+            return;
+          case "sq":
+            insertText(state.second ? "^3" : "^2");
+            state.second = false;
+            updateBadges();
+            return;
+          case "pow":
+            insertText("^");
+            return;
+          case "fact":
+            if (state.second) insertText("ncr(");
+            else insertText("!");
+            state.second = false;
+            updateBadges();
+            return;
+          case "abs":
+            insertText(state.second ? "round(" : "abs(");
+            state.second = false;
+            updateBadges();
+            return;
+          case "ln":
+            insertText(state.second ? "exp(" : "ln(");
+            state.second = false;
+            updateBadges();
+            return;
+          case "log":
+            insertText(state.second ? "alog(" : "log(");
+            state.second = false;
+            updateBadges();
+            return;
+          case "recip":
+            insertText("^(-1)");
+            return;
+          case "mod":
+            insertText(" mod ");
+            return;
+          case "sign": {
+            const [a, b] = getCaret();
+            if (a !== b) {
+              const sel = exprEl.value.slice(a, b);
+              insertText("-(" + sel + ")");
+            } else {
+              insertText("-");
+            }
+            return;
+          }
+          case "sin":
+          case "cos":
+          case "tan": {
+            const name = trigName(action);
+            insertText(name + "(");
+            state.second = false;
+            state.hyp = false;
+            updateBadges();
+            return;
+          }
+          default:
+            if (typeof action === "string") insertText(action);
+        }
+      }
+
+      function makeBtn(label, action, cls, shiftLabel) {
+        const b = document.createElement("button");
+        b.type = "button";
+        if (cls) b.className = cls;
+        if (shiftLabel) {
+          const s = document.createElement("span");
+          s.className = "shift-label";
+          s.textContent = shiftLabel;
+          b.appendChild(s);
+        } else {
+          const s = document.createElement("span");
+          s.className = "shift-label";
+          s.innerHTML = "&nbsp;";
+          b.appendChild(s);
+        }
+        const main = document.createElement("span");
+        main.textContent = label;
+        b.appendChild(main);
+        b.addEventListener("pointerdown", e => e.preventDefault());
+        b.addEventListener("click", () => pressKey(action));
+        return b;
+      }
+
+      function renderKeys() {
+        const box = $("keys");
+        box.innerHTML = "";
+
+        const row = (items) => items.forEach(it => box.appendChild(it));
+
+        row([
+          makeBtn("2nd", "2nd", state.second ? "active-mode fn" : "fn"),
+          makeBtn("HYP", "hyp", state.hyp ? "active-mode fn" : "fn"),
+          makeBtn(state.angle.toUpperCase(), "angle", "fn"),
+          makeBtn(state.fmt.toUpperCase(), "fmt", "fn"),
+          makeBtn("AC", "ac", "fn danger"),
+        ]);
+
+        row([
+          makeBtn(trigLabel("sin"), "sin", "fn", state.hyp ? "sinh⁻¹" : "sin⁻¹"),
+          makeBtn(trigLabel("cos"), "cos", "fn", state.hyp ? "cosh⁻¹" : "cos⁻¹"),
+          makeBtn(trigLabel("tan"), "tan", "fn", state.hyp ? "tanh⁻¹" : "tan⁻¹"),
+          makeBtn(state.second ? "eˣ" : "ln", "ln", "fn", "eˣ"),
+          makeBtn(state.second ? "10ˣ" : "log", "log", "fn", "10ˣ"),
+        ]);
+
+        row([
+          makeBtn(state.second ? "∛" : "√", "sqrt", "fn", "∛"),
+          makeBtn(state.second ? "x³" : "x²", "sq", "fn", "x³"),
+          makeBtn("xʸ", "pow", "fn"),
+          makeBtn(state.second ? "nCr" : "n!", "fact", "fn", "nCr"),
+          makeBtn(state.second ? "rnd" : "|x|", "abs", "fn", "round"),
+        ]);
+
+        row([
+          makeBtn(state.second ? "φ" : "π", "pi", "fn", "φ"),
+          makeBtn("e", "e", "fn"),
+          makeBtn("EXP", "exp", "fn"),
+          makeBtn("Ans", "ans", "fn"),
+          makeBtn(state.second ? "," : "%", "pct", "fn", ","),
+        ]);
+
+        row([
+          makeBtn("7", "7"), makeBtn("8", "8"), makeBtn("9", "9"),
+          makeBtn("÷", "/", "op"), makeBtn("⌫", "bk", "fn"),
+        ]);
+        row([
+          makeBtn("4", "4"), makeBtn("5", "5"), makeBtn("6", "6"),
+          makeBtn("×", "*", "op"), makeBtn("mod", "mod", "fn"),
+        ]);
+        row([
+          makeBtn("1", "1"), makeBtn("2", "2"), makeBtn("3", "3"),
+          makeBtn("−", "-", "op"), makeBtn("1/x", "recip", "fn"),
+        ]);
+        row([
+          makeBtn("±", "sign", "fn"), makeBtn("0", "0"), makeBtn(".", "."),
+          makeBtn("+", "+", "op"), makeBtn("=", "eq", "eq"),
+        ]);
+
+        // memory row is folded into help; add compact memory as extra row under? Skip for density.
+        // Add memory keys as a thin 4-col row by spanning — instead append after:
+        const mem = document.createElement("div");
+        mem.style.gridColumn = "1 / -1";
+        mem.style.display = "grid";
+        mem.style.gridTemplateColumns = "repeat(4, 1fr)";
+        mem.style.gap = "7px";
+        mem.style.marginTop = "2px";
+        ["MC", "MR", "M+", "M−"].forEach((lab, idx) => {
+          const acts = ["mc", "mr", "mplus", "mminus"];
+          const b = makeBtn(lab, acts[idx], "fn");
+          b.style.minHeight = "40px";
+          b.querySelector(".shift-label")?.remove();
+          mem.appendChild(b);
+        });
+        box.appendChild(mem);
+      }
+
+      // keyboard
+      exprEl.addEventListener("input", liveEval);
+      exprEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); doEquals(); }
+        if (e.key === "Escape") { e.preventDefault(); clearAll(); }
+      });
+
+      updateBadges();
+      liveEval();
+    })();
+  </script>
+</body>
+</html>
